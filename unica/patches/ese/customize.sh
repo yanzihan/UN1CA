@@ -119,6 +119,13 @@ if [[ "$SOURCE_SECURITY_CONFIG_ESE_CHIP_VENDOR" != "none" ]] && [[ "$SOURCE_SECU
             "$SOURCE_SECURITY_CONFIG_ESE_COS_NAME" \
             "${TARGET_SECURITY_CONFIG_ESE_COS_NAME//none/}"
     fi
+    if [[ "$SOURCE_SECURITY_CONFIG_ESE_COS_NAME" != "$TARGET_SECURITY_CONFIG_ESE_COS_NAME" ]]; then
+        SMALI_PATCH "system" "system/framework/services.jar" \
+            "smali/com/android/server/SystemConfig.smali" "replace" \
+            "readAllPermissions()V" \
+            "eSE_COS: $SOURCE_SECURITY_CONFIG_ESE_COS_NAME" \
+            "eSE_COS: ${TARGET_SECURITY_CONFIG_ESE_COS_NAME//none/}"
+    fi
     if [[ "$SOURCE_SECURITY_CONFIG_ESE_CHIP_VENDOR" != "$TARGET_SECURITY_CONFIG_ESE_CHIP_VENDOR" ]]; then
         SMALI_PATCH "system" "system/framework/services.jar" \
             "smali_classes2/com/samsung/ucm/ucmservice/CredentialManagerService.smali" "replaceall" \
@@ -128,6 +135,15 @@ if [[ "$SOURCE_SECURITY_CONFIG_ESE_CHIP_VENDOR" != "none" ]] && [[ "$SOURCE_SECU
 else
     LOG_MISSING_PATCHES "SOURCE_SECURITY_CONFIG_ESE_CHIP_VENDOR" "TARGET_SECURITY_CONFIG_ESE_CHIP_VENDOR" || true
     LOG_MISSING_PATCHES "SOURCE_SECURITY_CONFIG_ESE_COS_NAME" "TARGET_SECURITY_CONFIG_ESE_COS_NAME"
+fi
+
+# SEC_PRODUCT_FEATURE_SECURITY_SUPPORT_ESEK
+if ! $SOURCE_SECURITY_SUPPORT_ESEK && $TARGET_SECURITY_SUPPORT_ESEK; then
+    SET_PROP "system" "ro.security.ese.support_esek" "true"
+    APPLY_PATCH "system" "system/framework/framework.jar" "$MODPATH/esek/framework.jar/0001-Enable-SUPPORT_ESEK.patch"
+elif $SOURCE_SECURITY_SUPPORT_ESEK && ! $TARGET_SECURITY_SUPPORT_ESEK; then
+    SET_PROP "system" "ro.security.ese.support_esek" "false"
+    APPLY_PATCH "system" "system/framework/framework.jar" "$MODPATH/esek/framework.jar/0001-Disable-SUPPORT_ESEK.patch"
 fi
 
 unset -f LOG_MISSING_PATCHES
